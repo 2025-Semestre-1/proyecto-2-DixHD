@@ -3,5 +3,6 @@
 ### Carné y Nombre por integrante
 Carné: 2025094078 Nombre: Dixhon Jiménez Cruz
 ### Estado del proyecto: [-Malo-|Regular|Buena|MuyBuena|Excelente|Superior **]
+### Estado del proyecto: Bueno
 ### Enlace del video:
 Recordar que el video debe ser público para ser visto por el profesor
