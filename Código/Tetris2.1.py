@@ -37,19 +37,24 @@ ventana.title("Tetris")
 #=====================Ventana de Juego=====================#
 canvas = tk.Canvas(ventana, width=350, height=500, bg="#00002e", highlightthickness=0)
 canvas.pack()
+canvas.create_text(100,50,text="Puntos", fill="white", font=("Minecraftia", 20))
 
-fondo_puntos = tk.Canvas(ventana, width=100, height=50, bg="black", highlightthickness=1)
-
+fondo_puntos = tk.Canvas(canvas, width=100, height=60, bg="black", highlightthickness=1)
+fondo_gameover = tk.Canvas(canvas,width=250, height=450, bg="black",highlightthickness=5)
+fondo_nombre = tk.Canvas(canvas,width=200, height=85, bg="black", highlightthickness=1)
 #-----------------------Imagenes-----------------------#
 fondo = Image.open("fondo.png").resize((20,20))
 fondo = ImageTk.PhotoImage(fondo)
 ladrillo = Image.open("ladrillo.png").resize((20,20))
 ladrillo = ImageTk.PhotoImage(ladrillo)
-fondo_menu = Image.open("fondo_menu.png").resize((350,300))
-fondo_menu = ImageTk.PhotoImage(fondo_menu)
-#------------Imagen para el menú------------#
-fondo_menu_1 = Label(ventana,image=fondo_menu,borderwidth=0)
-fondo_menu_1.place(x=0, y=0)
+titulo = Image.open("titulo.png").resize((350,300))
+titulo = ImageTk.PhotoImage(titulo)
+#------------Iconos------------#
+menu_icon = Image.open("menu_icon.png").resize((30,30))#Icono de casa para regresar al menú
+menu_icon = ImageTk.PhotoImage(menu_icon)
+#------------Imagen titulo Tetris------------#
+#titulo_tetris = Label(ventana,image=titulo,borderwidth=0)
+#titulo_tetris.place(x=0, y=0)
 #------------Imagenes(Piezas)------------#
 pieza_roja = Image.open("pieza_roja.png").resize((20,20))
 pieza_roja = ImageTk.PhotoImage(pieza_roja)
@@ -92,31 +97,55 @@ def sonido_puntos():
     pygame.mixer.init()
     sonido = pygame.mixer.Sound("puntos.mp3")
     sonido.play()
+
+def sonido_gameover():
+    pygame.mixer.init()
+    sonido = pygame.mixer.Sound("gameover.mp3")
+    sonido.play()
+    
 #-----------------------Funciones Importantes-----------------------#
 puntos = 0
 texto_puntos = None
+stop = False
+
 def jugar():
-    global puntos, texto_puntos
-    fondo_menu_1.destroy()
+    crear_nuevo_juego()
+    global puntos, texto_puntos,titulo_tetris,boton_jugar,stop
+    stop = False
+    titulo_tetris.destroy()
     boton_jugar.destroy()
     musica()
     actualizar_interfaz()
     crear_bloque()
     caida_bloque()
     fondo_puntos.place(x=245, y=80)
-    texto_puntos = fondo_puntos.create_text(50, 25, text=str(puntos), fill="white", font=("Minecraftia", 15))
+    fondo_puntos.create_text(50, 13, text="Puntos:", fill="white", font=("Minecraftia", 12)) 
+    texto_puntos = fondo_puntos.create_text(50, 35, text=str(puntos), fill="white", font=("Minecraftia", 15))
 
-num_juego = 1
 def crear_nuevo_juego():
     matriz_original = open("Matriz_Base.txt", "r")
     contenido = matriz_original.readlines()
     matriz_original.close()
-    archivo_copia = open("Juego",num_juego,".txt", "w")
-    num_juego += 1
+    archivo_copia = open("Juego1.txt", "w")
     for linea in contenido:
         archivo_copia.write(linea)
     archivo_copia.close()
-
+    return
+"""
+num_juego = 1
+def crear_nuevo_juego(num_juego):
+    matriz_original = open("Matriz_Base.txt", "r")
+    contenido = matriz_original.readlines()
+    matriz_original.close()
+    nombre_archivo = "Juego" + str(num_juego) + ".txt"
+    archivo_copia = open(nombre_archivo, "w")
+    for linea in contenido:
+        archivo_copia.write(linea)
+    archivo_copia.close()
+    num_juego += 1
+    return num_juego
+crear_nuevo_juego(num_juego)
+"""
 def crear_bloque():
     pieza = random.choice(piezas)
     matriz = cargar_matriz()
@@ -136,9 +165,70 @@ def crear_bloque():
                 matriz[pos_y + y][pos_x + x] = letra
     guardar_matriz(matriz)
     actualizar_interfaz()
+    
+def guardar_nombre():
+    nombre = entrada_nombre.get()
+    if nombre.strip() == "":
+        nombre = "Jugador"
+    with open("puntajes.txt", "a") as archivo:
+        archivo.write(nombre + ": " + str(puntos) + "\n")
+    fondo_nombre.place_forget()
+    mostrar_ranking(canvas)
+
+def mostrar_ranking(canvas):
+    with open("puntajes.txt", "r") as archivo:
+        puntajes = archivo.readlines()
+    ranking = []
+    for linea in puntajes:
+        partes = linea.strip().split(": ")
+        if len(partes) == 2:
+            nombre, puntos = partes
+            puntos = int(puntos)
+            ranking.append((nombre, puntos))
+    ranking.sort(key=lambda x: x[1], reverse=True)
+    Y = 120
+    num = 0
+    fondo_gameover.create_line(0, 60, 255, 60, fill="white", width=5)
+    fondo_gameover.create_line(0, 405, 255, 405, fill="white", width=5)
+    fondo_gameover.create_text(125, 85, text="Ranking", fill="yellow", font=("Minecraftia", 18))
+    for i, (nombre, puntaje) in enumerate(ranking, start=1):
+        texto = f"{i}. {nombre}: {puntaje}"
+        fondo_gameover.create_text(125, Y, text=texto, fill="white", font=("Minecraftia", 12))
+        Y += 30
+        num += 1
+        if num == 10:
+            boton_menu = Button(fondo_gameover,image=menu_icon,command=menu)
+            boton_menu.place(x=110,y=414)
+            return
+        boton_menu = Button(fondo_gameover,image=menu_icon,command=menu)
+        boton_menu.place(x=110,y=414)
+def menu():
+    global stop, titulo_tetris,boton_jugar
+    fondo_gameover.place_forget()
+    fondo_gameover.delete("all")
+    canvas.delete("all")
+    stop = True
+    boton_jugar = Button(ventana,text="Jugar",font="Minecraftia",command=jugar)
+    boton_jugar.place(x=130,y=300)
+    titulo_tetris = Label(ventana,image=titulo,borderwidth=0)
+    titulo_tetris.place(x=0, y=0)
+menu()
 def game_over():
     pygame.mixer.music.stop()
-    canvas.create_text(175, 250, text= "GAME OVER", fill="red", font=("Minecraftia", 30))
+    sonido_gameover()
+    fondo_gameover.place(x=50, y=25)  
+    fondo_gameover.create_text(130,40,text="GAME OVER", fill="white", font=("Minecraftia", 20))
+    fondo_nombre.place(x=80, y=110)
+    fondo_nombre.create_text(45, 30, text="Nombre:", fill="white", font=("Minecraftia", 13))
+    global entrada_nombre
+    entrada_nombre = tk.Entry(fondo_nombre, font=("Minecraftia", 13))
+    entrada_nombre.place(x=90, y=17, width=100, height=25)
+
+    canvas.place_forget()
+    
+    boton_guardar = tk.Button(fondo_nombre, text="Guardar", command=guardar_nombre, font=("Minecraftia", 10))
+    boton_guardar.place(x=60, y=50)
+    
 def fijar_bloque():
     global puntos, texto_puntos
     matriz = cargar_matriz()
@@ -162,7 +252,6 @@ def fijar_bloque():
                 matriz[y][x] = "x1"
     for y in range(1, len(matriz) - 1):
         if all(celda != "0" and celda != "+" for celda in matriz[y][1:-1]):
-            # Línea completa: borrarla y desplazar las de arriba
             del matriz[y]
             matriz.insert(1, ["+"] + ["0"] * (len(matriz[0]) - 2) + ["+"])
             sonido_puntos()
@@ -170,9 +259,11 @@ def fijar_bloque():
             fondo_puntos.itemconfig(texto_puntos, text=str(puntos))
     guardar_matriz(matriz)
     crear_bloque()
+
+
 #-----------------------Guardar y Cargar Matriz-----------------------#
 def cargar_matriz():
-    archivo = open("Matriz_Base.txt", "r")
+    archivo = open("Juego1.txt", "r")
     contenido = archivo.readlines()
     archivo.close()
     matriz = []
@@ -182,7 +273,7 @@ def cargar_matriz():
     return matriz
 
 def guardar_matriz(matriz):
-    archivo = open("Matriz_Base.txt", "w")
+    archivo = open("Juego1.txt", "w")
     for fila in matriz:
         linea = ",".join(fila)
         archivo.write(linea + "\n")
@@ -227,7 +318,7 @@ def mover_abajo():
     for y in range(filas - 1, 0, -1):  
         for x in range(1, columnas - 1):
             if matriz[y][x] in letras:
-                if matriz[y + 1][x] != "0": # Revisa si abajo está vacio
+                if matriz[y + 1][x] != "0": 
                     return False
                 letra = matriz[y][x]
                 matriz[y + 1][x] = letra
@@ -237,12 +328,16 @@ def mover_abajo():
     return True
 
 def caida_bloque():
+    global stop
+    if stop:
+        return
     if mover_abajo() == False:
         fijar_bloque()
     ventana.after(500,caida_bloque)
 #-----------------------Actualizar GUI según Matriz-----------------------#
 def actualizar_interfaz():
-    canvas.delete("all")  # Borra todos los elementos dibujados
+    global canvas
+    canvas.delete("all")
     matriz = cargar_matriz()
     for y in range(len(matriz)):
         for x in range(len(matriz[y])):
@@ -268,13 +363,13 @@ def actualizar_interfaz():
                 canvas.create_image(x*20, y*20, anchor="nw", image=pieza_roja)
     guardar_matriz(matriz)
 #-----------------------Botones-----------------------#
-boton_jugar = Button(ventana,text="Jugar",font="Minecraftia",command=jugar)
-boton_jugar.place(x=130,y=300)
+#boton_jugar = Button(ventana,text="Jugar",font="Minecraftia",command=jugar)
+#boton_jugar.place(x=130,y=300)
 #-----------------------Teclas-----------------------#
 ventana.bind("<Left>",mover_izquierda)
 ventana.bind("<Right>", mover_derecha)
 ventana.bind("<Up>", lambda e: up)
-#ventana.bind("<Down>", mover_abajo)
+ventana.bind("<Down>",  lambda e: mover_abajo())
 #-----------------------Bucles-----------------------#
 ventana.mainloop()
 pygame.mixer.music.stop()
