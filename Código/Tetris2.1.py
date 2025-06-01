@@ -37,6 +37,9 @@ ventana.title("Tetris")
 #=====================Ventana de Juego=====================#
 canvas = tk.Canvas(ventana, width=350, height=500, bg="#00002e", highlightthickness=0)
 canvas.pack()
+
+fondo_puntos = tk.Canvas(ventana, width=100, height=50, bg="black", highlightthickness=1)
+
 #-----------------------Imagenes-----------------------#
 fondo = Image.open("fondo.png").resize((20,20))
 fondo = ImageTk.PhotoImage(fondo)
@@ -90,13 +93,18 @@ def sonido_puntos():
     sonido = pygame.mixer.Sound("puntos.mp3")
     sonido.play()
 #-----------------------Funciones Importantes-----------------------#
+puntos = 0
+texto_puntos = None
 def jugar():
+    global puntos, texto_puntos
     fondo_menu_1.destroy()
     boton_jugar.destroy()
     musica()
     actualizar_interfaz()
     crear_bloque()
     caida_bloque()
+    fondo_puntos.place(x=245, y=80)
+    texto_puntos = fondo_puntos.create_text(50, 25, text=str(puntos), fill="white", font=("Minecraftia", 15))
 
 num_juego = 1
 def crear_nuevo_juego():
@@ -122,11 +130,17 @@ def crear_bloque():
         for x in range(columnas_pieza):
             letra = pieza[y][x]
             if letra != 0:
+                if matriz[pos_y + y][pos_x + x] != "0":
+                    game_over()
+                    return
                 matriz[pos_y + y][pos_x + x] = letra
     guardar_matriz(matriz)
     actualizar_interfaz()
-
+def game_over():
+    pygame.mixer.music.stop()
+    canvas.create_text(175, 250, text= "GAME OVER", fill="red", font=("Minecraftia", 30))
 def fijar_bloque():
+    global puntos, texto_puntos
     matriz = cargar_matriz()
     for y in range(len(matriz)):
         for x in range(len(matriz[0])):
@@ -152,6 +166,8 @@ def fijar_bloque():
             del matriz[y]
             matriz.insert(1, ["+"] + ["0"] * (len(matriz[0]) - 2) + ["+"])
             sonido_puntos()
+            puntos += 100
+            fondo_puntos.itemconfig(texto_puntos, text=str(puntos))
     guardar_matriz(matriz)
     crear_bloque()
 #-----------------------Guardar y Cargar Matriz-----------------------#
@@ -223,7 +239,6 @@ def mover_abajo():
 def caida_bloque():
     if mover_abajo() == False:
         fijar_bloque()
-    mover_abajo() 
     ventana.after(500,caida_bloque)
 #-----------------------Actualizar GUI según Matriz-----------------------#
 def actualizar_interfaz():
