@@ -40,6 +40,7 @@ canvas.pack()
 canvas.create_text(100,50,text="Puntos", fill="white", font=("Minecraftia", 20))
 
 fondo_puntos = tk.Canvas(canvas, width=100, height=60, bg="black", highlightthickness=1)
+fondo_nivel = tk.Canvas(canvas, width=100, height=60, bg="black", highlightthickness=1)
 fondo_gameover = tk.Canvas(canvas,width=250, height=450, bg="black",highlightthickness=5)
 fondo_nombre = tk.Canvas(canvas,width=200, height=85, bg="black", highlightthickness=1)
 #-----------------------Imagenes-----------------------#
@@ -105,12 +106,14 @@ def sonido_gameover():
     
 #-----------------------Funciones Importantes-----------------------#
 puntos = 0
+nivel = 0
 texto_puntos = None
 stop = False
 
 def jugar():
     crear_nuevo_juego()
     global puntos, texto_puntos,titulo_tetris,boton_jugar,stop
+    puntos = 0
     stop = False
     titulo_tetris.destroy()
     boton_jugar.destroy()
@@ -118,9 +121,12 @@ def jugar():
     actualizar_interfaz()
     crear_bloque()
     caida_bloque()
+    fondo_nivel.place(x=245, y=150)
     fondo_puntos.place(x=245, y=80)
-    fondo_puntos.create_text(50, 13, text="Puntos:", fill="white", font=("Minecraftia", 12)) 
+    fondo_puntos.create_text(50, 13, text="Puntos:", fill="white", font=("Minecraftia", 12))
+    fondo_nivel.create_text(50, 13, text="Nivel:", fill="white", font=("Minecraftia", 12)) 
     texto_puntos = fondo_puntos.create_text(50, 35, text=str(puntos), fill="white", font=("Minecraftia", 15))
+    texto_nivel = fondo_nivel.create_text(50, 35, text=str(nivel), fill="white", font=("Minecraftia", 15))
 
 def crear_nuevo_juego():
     matriz_original = open("Matriz_Base.txt", "r")
@@ -223,14 +229,12 @@ def game_over():
     global entrada_nombre
     entrada_nombre = tk.Entry(fondo_nombre, font=("Minecraftia", 13))
     entrada_nombre.place(x=90, y=17, width=100, height=25)
-
     canvas.place_forget()
-    
     boton_guardar = tk.Button(fondo_nombre, text="Guardar", command=guardar_nombre, font=("Minecraftia", 10))
     boton_guardar.place(x=60, y=50)
     
 def fijar_bloque():
-    global puntos, texto_puntos
+    global puntos, texto_puntos, velocidad, nivel
     matriz = cargar_matriz()
     for y in range(len(matriz)):
         for x in range(len(matriz[0])):
@@ -256,7 +260,9 @@ def fijar_bloque():
             matriz.insert(1, ["+"] + ["0"] * (len(matriz[0]) - 2) + ["+"])
             sonido_puntos()
             puntos += 100
-            fondo_puntos.itemconfig(texto_puntos, text=str(puntos))
+            if int(puntos/1000) != 0:
+                velocidad -= 50
+                nivel += 1
     guardar_matriz(matriz)
     crear_bloque()
 
@@ -326,19 +332,20 @@ def mover_abajo():
     guardar_matriz(matriz)
     actualizar_interfaz()
     return True
-
+velocidad = 500
 def caida_bloque():
     global stop
     if stop:
         return
     if mover_abajo() == False:
         fijar_bloque()
-    ventana.after(500,caida_bloque)
+    ventana.after(velocidad,caida_bloque)
 #-----------------------Actualizar GUI según Matriz-----------------------#
 def actualizar_interfaz():
-    global canvas
+    global canvas, puntos
     canvas.delete("all")
     matriz = cargar_matriz()
+    fondo_puntos.itemconfig(texto_puntos, text=str(puntos))
     for y in range(len(matriz)):
         for x in range(len(matriz[y])):
             if matriz[y][x] == "+":
